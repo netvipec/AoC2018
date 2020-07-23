@@ -1,15 +1,4 @@
-#include <fstream>
-#include <iostream>
-#include <numeric>
-#include <sstream>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
-#include <algorithm>
-#include <cassert>
-#include <cctype>
-#include <locale>
+#include <bits/stdc++.h>
 
 typedef std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>> vec_input;
 typedef std::vector<int> vec_int;

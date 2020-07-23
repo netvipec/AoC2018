@@ -1,18 +1,4 @@
-#include <algorithm>
-#include <cassert>
-#include <cctype>
-#include <chrono>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <locale>
-#include <numeric>
-#include <sstream>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
-#include <map>
+#include <bits/stdc++.h>
 
 typedef std::unordered_map<char, std::vector<char>> half_vec_input;
 typedef std::pair<half_vec_input, half_vec_input> vec_input;
@@ -51,7 +37,7 @@ vec_char solution_part1(half_vec_input const& input_values, bool sorted_alphabet
     auto const letters_count = std::count(std::cbegin(used_letter), std::cend(used_letter), true);
 
     vec_char final_letter;
-    while (final_letter.size() < letters_count) {
+    while (static_cast<int>(final_letter.size()) < letters_count) {
         for (unsigned int i = 0; i < income_edge.size(); ++i) {
             if (used_letter[i] && income_edge[i] == 0) {
                 final_letter.push_back('A' + i);

@@ -1,18 +1,4 @@
-#include <algorithm>
-#include <cassert>
-#include <cctype>
-#include <chrono>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <locale>
-#include <numeric>
-#include <sstream>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
-#include <map>
+#include <bits/stdc++.h>
 
 enum class Operation { GUARD_START, FALL_ASLEEP, WAKES_UP };
 

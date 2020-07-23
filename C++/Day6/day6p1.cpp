@@ -1,18 +1,4 @@
-#include <algorithm>
-#include <cassert>
-#include <cctype>
-#include <chrono>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <locale>
-#include <numeric>
-#include <sstream>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
-#include <map>
+#include <bits/stdc++.h>
 
 typedef std::pair<int, int> point_t;
 typedef std::vector<point_t> vec_input;
@@ -81,8 +67,8 @@ void part1(vec_input const& input_values) {
     constexpr int extra_size = 10;
     std::vector<vec_char> map(max_size + extra_size, vec_char(max_size + extra_size));
 
-    for (int r = 0; r < map.size(); ++r) {
-        for (int c = 0; c < map.size(); ++c) {
+    for (int r = 0; r < static_cast<int>(map.size()); ++r) {
+        for (int c = 0; c < static_cast<int>(map.size()); ++c) {
             auto find_it = std::find(std::cbegin(input_values), std::cend(input_values), std::make_pair(r, c));
             if (find_it != std::cend(input_values)) {
                 map[r][c] = std::distance(std::cbegin(input_values), find_it) + 1;
@@ -114,7 +100,7 @@ void part1(vec_input const& input_values) {
 
     int max_area = 0;
     int max_area_index = 0;
-    for (int i = 0; i < input_values.size(); i++) {
+    for (int i = 0; i < static_cast<int>(input_values.size()); i++) {
         if (!removed_values[i+1]) {
             auto const area = calculate_area(map, i+1);
             if (area > max_area) {

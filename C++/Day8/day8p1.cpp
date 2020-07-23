@@ -1,18 +1,4 @@
-#include <algorithm>
-#include <cassert>
-#include <cctype>
-#include <chrono>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <locale>
-#include <numeric>
-#include <sstream>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
-#include <map>
+#include <bits/stdc++.h>
 
 typedef std::vector<int> vec_int;
 typedef std::vector<char> vec_char;
@@ -85,7 +71,7 @@ int TreeNode<T>::value() const {
     } else {
         return std::accumulate(std::cbegin(m_metadata), std::cend(m_metadata), 0, [&](auto const& base, auto const& elem){
             auto const idx = elem - 1;
-            if (idx < 0 || idx >= m_childrens.size()) {
+            if (idx < 0 || idx >= static_cast<int>(m_childrens.size())) {
                 return base;
             }
             return base + m_childrens[idx].value();

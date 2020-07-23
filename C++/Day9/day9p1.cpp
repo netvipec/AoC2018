@@ -1,19 +1,4 @@
-#include <algorithm>
-#include <cassert>
-#include <cctype>
-#include <chrono>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <locale>
-#include <numeric>
-#include <sstream>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
-#include <map>
-#include <list>
+#include <bits/stdc++.h>
 
 typedef std::vector<int64_t> vec_int;
 typedef std::vector<char> vec_char;
@@ -62,7 +47,6 @@ void part1(vec_input const& input_values) {
 
     int64_t current_index = 3;
     int64_t current_value = 4;
-    int64_t play_count = 3;
     int64_t next_multiple = multiple;
     vec_int table{0, 2, 1, 3};
     vec_int players_score(total_players, 0);
@@ -79,14 +63,14 @@ void part1(vec_input const& input_values) {
             // }
 
             auto new_index = (current_index + 2);
-            new_index = (new_index > table.size()) ? new_index % table.size() : new_index;
+            new_index = (new_index > static_cast<int>(table.size())) ? new_index % table.size() : new_index;
             table.insert(std::begin(table) + new_index, current_value);
             current_index = new_index;
         }
 
         if (current_value <= total_points) {
             players_score[next_multiple % players_score.size()] += next_multiple;
-            auto new_index = (current_index + table.size() - 7) % table.size();
+            auto new_index = (current_index + table.size() - prev_value) % table.size();
             players_score[next_multiple % players_score.size()] += table[new_index];
             current_index = new_index;
             ++current_value;

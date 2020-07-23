@@ -1,32 +1,7 @@
-#include <algorithm>
-#include <limits>
-#include <cassert>
-#include <cctype>
-#include <chrono>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <locale>
-#include <numeric>
-#include <sstream>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
-#include <map>
+#include <bits/stdc++.h>
 
 typedef std::vector<std::pair<int, int>> vec_pair;
 typedef std::pair<vec_pair, vec_pair> vec_input;
-
-static std::vector<std::string> split(std::string const& s, char delim) {
-  std::stringstream ss(s);
-  std::string item;
-  std::vector<std::string> elems;
-  while (std::getline(ss, item, delim)) {
-    elems.push_back(item);
-  }
-  return elems;
-}
 
 std::tuple<int, int> read_number(std::string const& line, int start_offset, int begin_offset, std::string delim) {
     auto const end = line.find(delim, start_offset);
@@ -86,6 +61,7 @@ void print_points(vec_pair points) {
 
     int last_x = min_x_it->first;
     int last_y = min_y_it->second;
+    std::cout << "Part1: " << std::endl;
     std::cout << "min: " << last_x << "," << last_y << std::endl;
     std::for_each(std::cbegin(points), std::cend(points), [&](auto const& elem){
         if (last_y < elem.second) {
@@ -118,7 +94,7 @@ void part1(vec_input const& input_values) {
 
     int counter = 0;
     int print_count = 0;
-    int best_diff = std::numeric_limits<int>::max();
+    // int best_diff = std::numeric_limits<int>::max();
     for (;;) {
         ++counter;
         for (unsigned int i = 0; i < points.size(); ++i) {
@@ -148,14 +124,10 @@ void part1(vec_input const& input_values) {
     }
 }
 
-void part2(vec_input const& input_values) {
-}
-
 int main() {
     auto const input_values = read_input("input");
     
     part1(input_values);
-    part2(input_values);
 
     return 0;
 }

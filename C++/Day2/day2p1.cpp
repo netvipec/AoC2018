@@ -1,12 +1,4 @@
-#include <fstream>
-#include <iostream>
-#include <numeric>
-#include <sstream>
-#include <string>
-#include <unordered_set>
-#include <vector>
-#include <algorithm>
-#include <cassert>
+#include <bits/stdc++.h>
 
 typedef std::vector<std::string> vec_string;
 typedef std::vector<int> vec_int;
