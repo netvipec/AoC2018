@@ -1,24 +1,9 @@
-#include <algorithm>
-#include <cassert>
-#include <cctype>
-#include <chrono>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <locale>
-#include <numeric>
-#include <sstream>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
-#include <map>
-#include <list>
+#include <bits/stdc++.h>
 
 typedef std::vector<int64_t> vec_int;
 typedef int64_t vec_input;
 
-vec_input read_input(std::string const& file_path) {
+vec_input read_input(std::string const& ) {
     return 7400;
 }
 

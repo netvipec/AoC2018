@@ -1,22 +1,4 @@
-#include <algorithm>
-#include <cassert>
-#include <cctype>
-#include <chrono>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <locale>
-#include <numeric>
-#include <sstream>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
-#include <map>
-#include <list>
-#include <array>
-#include <tuple>
-#include <optional>
+#include <bits/stdc++.h>
 
 // up, right, down, left
 constexpr std::array<char, 4> dir_symbol = { '^', '>', 'v', '<' };
@@ -39,16 +21,6 @@ struct car {
 typedef std::vector<int64_t> vec_int;
 typedef std::vector<std::vector<char>> vec_input;
 typedef std::vector<car> car_t;
-
-static std::vector<std::string> split(std::string const& s, char delim) {
-  std::stringstream ss(s);
-  std::string item;
-  std::vector<std::string> elems;
-  while (std::getline(ss, item, delim)) {
-    elems.push_back(item);
-  }
-  return elems;
-}
 
 vec_input read_input(std::string const& file_path) {
     vec_input input_values;

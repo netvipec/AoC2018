@@ -1,32 +1,7 @@
-#include <algorithm>
-#include <cassert>
-#include <cctype>
-#include <chrono>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <locale>
-#include <numeric>
-#include <sstream>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
-#include <map>
-#include <list>
+#include <bits/stdc++.h>
 
 typedef std::vector<int64_t> vec_int;
 typedef std::pair<std::string, std::vector<std::pair<std::string, std::string>>> vec_input;
-
-static std::vector<std::string> split(std::string const& s, char delim) {
-  std::stringstream ss(s);
-  std::string item;
-  std::vector<std::string> elems;
-  while (std::getline(ss, item, delim)) {
-    elems.push_back(item);
-  }
-  return elems;
-}
 
 vec_input read_input(std::string const& file_path) {
     vec_input input_values;
@@ -69,7 +44,7 @@ std::tuple<vec_int, int> evolve(vec_int const& initial_state, int begin_index, s
 
     int number = 0;
     for (int i = -5; i < static_cast<int>(initial_state.size()) + 5; ++i) {
-        auto const elem = (i < 0) ? 0 : (i >= initial_state.size() ? 0 : initial_state[i]);
+        auto const elem = (i < 0) ? 0 : (i >= static_cast<int>(initial_state.size()) ? 0 : initial_state[i]);
 
         number = 2 * number + elem;
         number &= mask;
