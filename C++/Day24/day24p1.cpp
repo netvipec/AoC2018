@@ -2,6 +2,8 @@
 
 using ll = int64_t;
 
+#define VERBOSE 0
+
 // trim from start (in place)
 static inline void ltrim(std::string& s) {
     s.erase(s.begin(), std::find_if(s.begin(), s.end(),
@@ -56,13 +58,21 @@ public:
     ll team_id() const { return _team_id; }
     bool alive() const { return _units > 0; }
 
-    void attacked(army const& other) {
+    ll attack_points() const { return _attack_points; }
+    void change_attack_points(ll diff_attack_points) {
+        _attack_points += diff_attack_points;
+    }
+
+    ll attacked(army const& other) {
         auto const damage = other.damage(*this);
 
         auto const units_removed = std::min(damage / _hit_points, _units);
         _units -= units_removed;
+#if VERBOSE > 1
         std::cout << "Kill " << units_removed << " units. remaining: " << _units
                   << std::endl;
+#endif
+        return units_removed;
     }
 
     void read(std::string const& line, ll team_id, ll idx) {
@@ -192,7 +202,8 @@ ll select_target(ll attacker_idx, input_t const& input_data,
                       auto it = std::find(std::cbegin(already_selected),
                                           std::cend(already_selected), idx);
                       if (elem.team_id() != attacker.team_id() &&
-                          it == std::cend(already_selected) && elem.alive()) {
+                          it == std::cend(already_selected) && elem.alive() &&
+                          attacker.damage(elem) > 0) {
                           candidates.push_back(idx);
                       }
                       idx++;
@@ -217,7 +228,7 @@ ll select_target(ll attacker_idx, input_t const& input_data,
     return candidates.front();
 }
 
-result1_t solve1(input_t input_data) {
+std::pair<result1_t, bool> solve_helper(input_t input_data) {
     std::vector<ll> attack_order(input_data.size());
     std::iota(std::begin(attack_order), std::end(attack_order), 0);
 
@@ -245,47 +256,139 @@ result1_t solve1(input_t input_data) {
         std::vector<ll> attack_to(input_data.size(), -1);
         std::for_each(std::cbegin(target_selection_order),
                       std::cend(target_selection_order), [&](auto const& elem) {
-                          if (input_data[elem].alive()) {
-                              attack_to[elem] =
-                                  select_target(elem, input_data, attack_to);
-                          }
+                          attack_to[elem] =
+                              select_target(elem, input_data, attack_to);
                       });
 
+        ll units_removed_in_attack = 0;
         std::for_each(
             std::cbegin(attack_order), std::cend(attack_order),
             [&](auto const& elem) {
                 if (attack_to[elem] != -1) {
+#if VERBOSE > 1
                     std::cout << "Attacker: " << input_data[elem] << std::endl;
                     std::cout << "Deffender: " << input_data[attack_to[elem]]
                               << std::endl;
+#endif
 
-                    input_data[attack_to[elem]].attacked(input_data[elem]);
+                    units_removed_in_attack +=
+                        input_data[attack_to[elem]].attacked(input_data[elem]);
+#if VERBOSE > 1
                     std::cout << std::endl;
+#endif
                 }
             });
 
         auto units1 = std::accumulate(
             std::cbegin(input_data), std::cend(input_data), 0ll,
             [](auto const& base, auto const& elem) {
-                return (elem.team_id() == 0) ? base + elem.units() : base;
+                return (elem.team_id() == 0) ? (base + elem.units()) : base;
             });
         auto units2 = std::accumulate(
             std::cbegin(input_data), std::cend(input_data), 0ll,
             [](auto const& base, auto const& elem) {
-                return (elem.team_id() == 1) ? base + elem.units() : base;
+                return (elem.team_id() == 1) ? (base + elem.units()) : base;
             });
 
-        if (units1 == 0 || units2 == 0) {
-            return units1 != 0 ? units1 : units2;
+        if (units1 == 0 && units2 == 0) {
+            return std::make_pair(-1, false);
         }
 
+        if (units1 == 0 || units2 == 0) {
+#if VERBOSE > 0
+            // std::for_each(
+            //     std::cbegin(input_data), std::cend(input_data),
+            //     [](auto const& elem) { std::cout << elem << std::endl; });
+#endif
+            return (units1 != 0) ? std::make_pair(units1, true)
+                                 : std::make_pair(units2, false);
+        }
+
+        if (units_removed_in_attack == 0) {
+#if VERBOSE > 0
+            std::cout << "Finalize by stale mate. Units1: " << units1
+                      << ", Units2: " << units2 << std::endl;
+#endif
+            return std::make_pair(-1, false);
+        }
+
+#if VERBOSE > 1
         std::cout << "New round:" << std::endl;
+#endif
     }
+}
+
+result1_t solve1(input_t const& input_data) {
+    return solve_helper(input_data).first;
 }
 
 result2_t solve2(input_t const& input_data) {
     result2_t ans = -1;
-    // TODO: insert code
+
+#if VERBOSE > 0
+    std::cout << "Testing boost: 0" << std::endl;
+#endif
+
+    auto const result = solve_helper(input_data);
+    assert(!result.second);
+    ll first_winning_boost = 1;
+    ll const step = 2;
+    for (;;) {
+#if VERBOSE > 0
+        std::cout << "Testing boost: " << first_winning_boost << std::endl;
+#endif
+
+        auto boost_input_data = input_data;
+        std::for_each(std::begin(boost_input_data), std::end(boost_input_data),
+                      [=](auto& elem) {
+                          if (elem.team_id() == 0) {
+                              elem.change_attack_points(first_winning_boost);
+                          }
+                      });
+
+        auto const result = solve_helper(boost_input_data);
+        if (result.second) {
+            ans = result.first;
+            break;
+        }
+
+        first_winning_boost *= step;
+    }
+
+#if VERBOSE > 0
+    std::cout << "Final: " << first_winning_boost << std::endl;
+#endif
+
+    ll hi = first_winning_boost;
+    ll lo = first_winning_boost / step;
+
+    while (lo < hi) {
+        auto const mi = lo + (hi - lo) / 2;
+#if VERBOSE > 0
+        std::cout << "Searching in hi: " << hi << ", lo: " << lo
+                  << ", mi: " << mi << std::endl;
+#endif
+
+        auto boost_input_data = input_data;
+        std::for_each(std::begin(boost_input_data), std::end(boost_input_data),
+                      [=](auto& elem) {
+                          if (elem.team_id() == 0) {
+                              elem.change_attack_points(mi);
+                          }
+                      });
+
+        auto const result = solve_helper(boost_input_data);
+        if (result.second) {
+            hi = mi;
+            ans = result.first;
+
+#if VERBOSE > 0
+            std::cout << "New sol: " << ans << std::endl;
+#endif
+        } else {
+            lo = mi + 1;
+        }
+    }
     return ans;
 }
 
