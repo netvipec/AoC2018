@@ -105,12 +105,6 @@ entity bfs(entity const& origin, vec_input const& map,
     // Find enemies
     std::set<entity> places{origin};
     std::set<entity> new_places;
-    std::set<entity> visit_places;
-    std::transform(
-        std::cbegin(entities), std::cend(entities),
-        std::inserter(visit_places, visit_places.end()), [](auto const& elem) {
-            return entity(elem.x, elem.y, '.', elem.hit_points, elem.id);
-        });
     std::set<entity> end_places;
     int steps = 0;
     map_back[origin.y][origin.x] = steps;
@@ -120,41 +114,38 @@ entity bfs(entity const& origin, vec_input const& map,
         std::for_each(
             std::cbegin(places), std::cend(places), [&](auto const& p) {
                 auto const neighbors = p.neighbors(map);
-                std::for_each(std::cbegin(neighbors), std::cend(neighbors),
-                              [&](auto const& n) {
-                                  if (n.second == '#') {
-                                      return;
-                                  }
-                                  entity en(n.first.first, n.first.second,
-                                            n.second, p.hit_points, p.id);
-                                  auto const enemy_it = std::find_if(
-                                      std::cbegin(entities),
-                                      std::cend(entities), [&](auto const& e) {
-                                          return en.x == e.x && en.y == e.y &&
-                                                 std::abs(origin.type -
-                                                          e.type) == 2;
-                                      });
+                std::for_each(
+                    std::cbegin(neighbors), std::cend(neighbors),
+                    [&](auto const& n) {
+                        if (n.second == '#') {
+                            return;
+                        }
+                        entity en(n.first.first, n.first.second, n.second,
+                                  p.hit_points, p.id);
+                        if (n.second == '.') {
+                            if (map_back[n.first.second][n.first.first] == -1) {
+                                new_places.insert(en);
+                                map_back[en.y][en.x] = steps;
+                            }
+                            return;
+                        }
+                        auto const enemy_it = std::find_if(
+                            std::cbegin(entities), std::cend(entities),
+                            [&](auto const& e) {
+                                return e.alive() && en.x == e.x &&
+                                       en.y == e.y &&
+                                       std::abs(origin.type - e.type) == 2;
+                            });
 
-                                  if (enemy_it != std::cend(entities)) {
-                                      en.type = enemy_it->type;
-                                      found_enemy = true;
-                                      new_places.insert(en);
-                                      map_back[en.y][en.x] = steps;
-                                      end_places.insert(p);
-                                      return;
-                                  }
-
-                                  auto const visited = visit_places.find(en);
-                                  if (visited != std::cend(visit_places)) {
-                                      return;
-                                  }
-                                  visit_places.insert(en);
-
-                                  if (en.type == '.') {
-                                      new_places.insert(en);
-                                      map_back[en.y][en.x] = steps;
-                                  }
-                              });
+                        if (enemy_it != std::cend(entities)) {
+                            en.type = enemy_it->type;
+                            found_enemy = true;
+                            new_places.insert(en);
+                            map_back[en.y][en.x] = steps;
+                            end_places.insert(p);
+                            return;
+                        }
+                    });
             });
 
         new_places.swap(places);
@@ -229,107 +220,94 @@ void print(vec_input map, vec_pos const& entities) {
     });
 }
 
-void part1(vec_input const& input_values) {
+void part1(vec_input input_values) {
     auto entities = get_pos(input_values, 'G', 'E');
-    auto input_values_base = input_values;
-    std::for_each(std::begin(input_values_base), std::end(input_values_base),
-                  [](auto& row) {
-                      std::for_each(std::begin(row), std::end(row),
-                                    [](auto& cell) {
-                                        if (cell == 'E' || cell == 'G') {
-                                            cell = '.';
-                                        }
-                                    });
-                  });
 
     int round = 0;
-    for (;;) {
+    for (;; round++) {
         std::sort(std::begin(entities), std::end(entities));
 
 #ifdef VERBOSE
         std::cout << "Round: " << round << std::endl;
-        print(input_values_base, entities);
+        print(input_values, entities);
 #endif
 
-        bool finalize = false;
-        std::for_each(
-            std::begin(entities), std::end(entities), [&](auto& elem) {
-                auto count_goblins =
-                    std::count_if(std::cbegin(entities), std::cend(entities),
-                                  [](auto const& elem) {
-                                      return elem.alive() && elem.type == 'G';
+        for (auto& elem : entities) {
+            if (!elem.alive()) {
+                continue;
+            }
+
+            auto count_enemies = std::count_if(
+                std::cbegin(entities), std::cend(entities), [&](auto const& e) {
+                    return e.alive() && std::abs(elem.type - e.type) == 2;
+                });
+            if (count_enemies == 0) {
+#ifdef VERBOSE
+                std::cout << "Final Round: " << round << std::endl;
+                print(input_values, entities);
+#endif
+
+                auto const total_hit_points = std::accumulate(
+                    std::cbegin(entities), std::cend(entities), 0ll,
+                    [](auto const& base, auto const& elem) {
+                        return elem.alive() ? (base + elem.hit_points) : base;
+                    });
+                std::cout << "Rounds: " << round << std::endl;
+                std::cout << "Total Hit Points: " << total_hit_points
+                          << std::endl;
+                std::cout << "Part1: " << round * total_hit_points << std::endl;
+                return;
+            }
+
+            // Verify for move
+            auto posible_moves = bfs(elem, input_values, entities);
+
+            auto neighbors = posible_moves.neighbors(input_values);
+
+            // Verify for attack
+            std::vector<entity*> enemies;
+            std::for_each(std::cbegin(neighbors), std::cend(neighbors),
+                          [&](auto const& n) {
+                              auto const entity_it = std::find_if(
+                                  std::begin(entities), std::end(entities),
+                                  [&](auto const& e) {
+                                      return e.alive() &&
+                                             std::abs(e.type - elem.type) ==
+                                                 2 &&
+                                             e.x == n.first.first &&
+                                             e.y == n.first.second;
                                   });
-                auto count_elves =
-                    std::count_if(std::cbegin(entities), std::cend(entities),
-                                  [](auto const& elem) {
-                                      return elem.alive() && elem.type == 'E';
-                                  });
+                              if (entity_it == std::end(entities)) {
+                                  return;
+                              }
+                              enemies.push_back(&*entity_it);
+                          });
 
-                if (count_goblins == 0 || count_elves == 0) {
-                    finalize = true;
-                    return;
+            if (!enemies.empty()) {
+                std::sort(std::begin(enemies), std::end(enemies),
+                          [](auto const& lhs, auto const& rhs) {
+                              return std::tie(lhs->hit_points, *lhs) <
+                                     std::tie(rhs->hit_points, *rhs);
+                          });
+                auto enemy = enemies.front();
+                enemy->attack();
+                if (!enemy->alive()) {
+                    input_values[enemy->y][enemy->x] = '.';
                 }
-
-                if (!elem.alive()) {
-                    return;
-                }
-
-                // Verify for move
-                auto posible_moves = bfs(elem, input_values_base, entities);
-
-                auto neighbors = posible_moves.neighbors(input_values_base);
-
-                // Verify for attack
-                std::vector<entity*> enemies;
-                std::for_each(std::cbegin(neighbors), std::cend(neighbors),
-                              [&](auto const& n) {
-                                  auto const entity_it = std::find_if(
-                                      std::begin(entities), std::end(entities),
-                                      [&](auto const& e) {
-                                          return e.alive() &&
-                                                 std::abs(e.type - elem.type) ==
-                                                     2 &&
-                                                 e.x == n.first.first &&
-                                                 e.y == n.first.second;
-                                      });
-                                  if (entity_it == std::end(entities)) {
-                                      return;
-                                  }
-                                  enemies.push_back(&*entity_it);
-                              });
-
-                if (!enemies.empty()) {
-                    std::sort(std::begin(enemies), std::end(enemies),
-                              [](auto const& lhs, auto const& rhs) {
-                                  return std::tie(lhs->hit_points, *lhs) <
-                                         std::tie(rhs->hit_points, *rhs);
-                              });
-                    auto enemy = enemies.front();
-                    enemy->attack();
-                }
-                elem = posible_moves;
-            });
+            }
+            if (elem.x != posible_moves.x || elem.y != posible_moves.y) {
+                input_values[elem.y][elem.x] = '.';
+                input_values[posible_moves.y][posible_moves.x] =
+                    posible_moves.type;
+            }
+            elem = posible_moves;
+        }
 
         // Remove dead entities
         auto last = std::remove_if(std::begin(entities), std::end(entities),
                                    [](auto& elem) { return !elem.alive(); });
         entities.erase(last, entities.end());
-
-        round++;
-
-        if (finalize) {
-            break;
-        }
     }
-
-    auto const total_hit_points =
-        std::accumulate(std::cbegin(entities), std::cend(entities), 0ll,
-                        [](auto const& base, auto const& elem) {
-                            return base + elem.hit_points;
-                        });
-    std::cout << "Rounds: " << round - 1 << std::endl;
-    std::cout << "Total Hit Points: " << total_hit_points << std::endl;
-    std::cout << "Part1: " << (round - 1) * total_hit_points << std::endl;
 }
 
 void part2(vec_input const& input_values) {}
