@@ -1,6 +1,6 @@
 #include <bits/stdc++.h>
 
-#define VERBOSE
+#define VERBOSE 1
 
 struct pairhash {
 public:
@@ -20,26 +20,19 @@ typedef std::vector<char> vec_char;
 typedef std::vector<vec_char> vec_input;
 
 struct entity {
-    static int _id;
     int x;
     int y;
     char type;
     int hit_points;
-    int id;
+    int attack_points;
 
-    entity(int xx, int yy, char t, int hp, int idid)
-        : x(xx), y(yy), type(t), hit_points(hp), id(idid) {}
+    entity(int xx, int yy, char t, int hp, int a)
+        : x(xx), y(yy), type(t), hit_points(hp), attack_points(a) {}
     entity(int xx, int yy, char t)
-        : x(xx), y(yy), type(t), hit_points(200), id(_id++) {}
+        : x(xx), y(yy), type(t), hit_points(200), attack_points(3) {}
 
     bool operator<(entity const& other) const {
         return std::tie(y, x, type) < std::tie(other.y, other.x, other.type);
-    }
-
-    bool operator==(entity const& other) const {
-        return std::tie(y, x, type, hit_points, id) ==
-               std::tie(other.y, other.x, other.type, other.hit_points,
-                        other.id);
     }
 
     neighbors_t neighbors(vec_input const& map) const {
@@ -54,13 +47,11 @@ struct entity {
 
     bool alive() const { return hit_points > 0; }
 
-    bool attack() {
-        hit_points -= 3;
+    bool attack(int ap) {
+        hit_points -= ap;
         return hit_points <= 0;
     }
 };
-
-int entity::_id = 0;
 
 typedef std::vector<entity> vec_pos;
 
@@ -121,7 +112,7 @@ entity bfs(entity const& origin, vec_input const& map,
                             return;
                         }
                         entity en(n.first.first, n.first.second, n.second,
-                                  p.hit_points, p.id);
+                                  p.hit_points, p.attack_points);
                         if (n.second == '.') {
                             if (map_back[n.first.second][n.first.first] == -1) {
                                 new_places.insert(en);
@@ -220,14 +211,20 @@ void print(vec_input map, vec_pos const& entities) {
     });
 }
 
-void part1(vec_input input_values) {
+std::pair<int, bool> solve_rounds(vec_input input_values, int attack_points,
+                                  bool elve_can_die = true) {
     auto entities = get_pos(input_values, 'G', 'E');
+    std::for_each(std::begin(entities), std::end(entities), [=](auto& elem) {
+        if (elem.type == 'E') {
+            elem.attack_points = attack_points;
+        }
+    });
 
     int round = 0;
     for (;; round++) {
         std::sort(std::begin(entities), std::end(entities));
 
-#ifdef VERBOSE
+#if VERBOSE > 1
         std::cout << "Round: " << round << std::endl;
         print(input_values, entities);
 #endif
@@ -242,21 +239,28 @@ void part1(vec_input input_values) {
                     return e.alive() && std::abs(elem.type - e.type) == 2;
                 });
             if (count_enemies == 0) {
-#ifdef VERBOSE
-                std::cout << "Final Round: " << round << std::endl;
-                print(input_values, entities);
-#endif
-
                 auto const total_hit_points = std::accumulate(
                     std::cbegin(entities), std::cend(entities), 0ll,
                     [](auto const& base, auto const& elem) {
                         return elem.alive() ? (base + elem.hit_points) : base;
                     });
+
+#if VERBOSE > 1
+                auto last =
+                    std::remove_if(std::begin(entities), std::end(entities),
+                                   [](auto& elem) { return !elem.alive(); });
+                entities.erase(last, entities.end());
+
+                std::cout << "Final Round: " << round << std::endl;
+                print(input_values, entities);
+
                 std::cout << "Rounds: " << round << std::endl;
                 std::cout << "Total Hit Points: " << total_hit_points
                           << std::endl;
-                std::cout << "Part1: " << round * total_hit_points << std::endl;
-                return;
+#endif
+
+                return std::make_pair(round * total_hit_points,
+                                      elem.type == 'E');
             }
 
             // Verify for move
@@ -290,8 +294,11 @@ void part1(vec_input input_values) {
                                      std::tie(rhs->hit_points, *rhs);
                           });
                 auto enemy = enemies.front();
-                enemy->attack();
+                enemy->attack(elem.attack_points);
                 if (!enemy->alive()) {
+                    if (!elve_can_die && enemy->type == 'E') {
+                        return std::make_pair(-1, false);
+                    }
                     input_values[enemy->y][enemy->x] = '.';
                 }
             }
@@ -310,7 +317,59 @@ void part1(vec_input input_values) {
     }
 }
 
-void part2(vec_input const& input_values) {}
+void part1(vec_input const& input_values) {
+    auto const p1 = solve_rounds(input_values, 3);
+    std::cout << "Part1: " << p1.first << ", Elves win: " << std::boolalpha
+              << p1.second << std::endl;
+}
+
+void part2(vec_input const& input_values) {
+    int ans = -1;
+    int first_winning_attack = 4;
+    int const step = 2;
+    for (;;) {
+#if VERBOSE > 0
+        std::cout << "Testing attack: " << first_winning_attack << std::endl;
+#endif
+
+        auto const result =
+            solve_rounds(input_values, first_winning_attack, false);
+        if (result.second) {
+            ans = result.first;
+            break;
+        }
+
+        first_winning_attack *= step;
+    }
+
+#if VERBOSE > 0
+    std::cout << "Final: " << first_winning_attack << std::endl;
+#endif
+
+    int hi = first_winning_attack;
+    int lo = first_winning_attack / step;
+
+    while (lo < hi) {
+        auto const mi = lo + (hi - lo) / 2;
+#if VERBOSE > 0
+        std::cout << "Searching in hi: " << hi << ", lo: " << lo
+                  << ", mi: " << mi << std::endl;
+#endif
+
+        auto const result = solve_rounds(input_values, mi, false);
+        if (result.second) {
+            hi = mi;
+            ans = result.first;
+
+#if VERBOSE > 0
+            std::cout << "New sol: " << ans << std::endl;
+#endif
+        } else {
+            lo = mi + 1;
+        }
+    }
+    std::cout << "Part2: " << ans << std::endl;
+}
 
 int main() {
     auto const input_values = read_input("input");
